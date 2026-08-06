@@ -14,7 +14,10 @@ class ChangePasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'current_password' => ['required', 'current_password'],
+            'current_password' => [
+                'required',
+                'current_password:'.($this->is('api/*') ? 'sanctum' : 'web'),
+            ],
             'password' => ['required', 'string', 'min:8', 'different:current_password', 'confirmed'],
         ];
     }

@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class LibrarianController extends Controller
@@ -45,7 +46,21 @@ class LibrarianController extends Controller
 
     public function update(BookRequest $request, Book $book): RedirectResponse
     {
-        $book->update($request->validated());
+        DB::transaction(function () use ($request, $book): void {
+            $book = Book::query()->lockForUpdate()->findOrFail($book->id);
+            $errors = $request->inventoryErrors(
+                $book->borrowings()
+                    ->whereNull('return_date')
+                    ->whereIn('status', ['borrowed', 'extended'])
+                    ->count(),
+            );
+
+            if ($errors !== []) {
+                throw ValidationException::withMessages($errors);
+            }
+
+            $book->update($request->validated());
+        });
 
         return back()->with('success', 'Data buku berhasil diperbarui.');
     }

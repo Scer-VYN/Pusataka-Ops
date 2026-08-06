@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STACK // Collection</title>
+    @include('partials.preferences')
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css'])
+        @vite(['resources/css/app.css', 'resources/js/theme.js'])
     @else
         <style>{!! file_get_contents(resource_path('css/app.css')) !!}</style>
+        <script>{!! file_get_contents(resource_path('js/theme.js')) !!}</script>
     @endif
     <style>
         .page-shell { max-width: 1280px; margin: 0 auto; padding: 30px 42px 70px; }
@@ -99,7 +101,7 @@
         </form>
         <div class="catalog-meta"><span id="catalog-result-count" aria-live="polite">INVENTORY // {{ $books->firstItem() ?? 0 }}-{{ $books->lastItem() ?? 0 }}</span><span>{{ !empty($filters['q']) ? 'SEARCH // '.strtoupper($filters['q']) : 'FULL CATALOGUE' }}</span><span>STATUS REFRESHED {{ now()->format('d M Y H:i') }}</span></div>
         <section class="catalog-grid">
-            @forelse($books as $book)
+            @foreach($books as $book)
                 @php($cover = $coverMeta[$book->cover_theme] ?? $coverMeta['focus'])
                 @php($stockPercentage = $book->total_stock > 0 ? round(($book->available_stock / $book->total_stock) * 100) : 0)
                 <article class="catalog-card" data-catalog-card data-category="{{ $book->category_id }}" data-rack="{{ $book->category->rack }}" data-available="{{ $book->available_stock > 0 ? '1' : '0' }}" data-title="{{ strtolower($book->title) }}" data-popularity="{{ $book->popularity }}" data-created-at="{{ $book->created_at->timestamp }}" data-search-text="{{ strtolower($book->title.' '.$book->author.' '.$book->publisher) }}">
@@ -116,16 +118,16 @@
                         <div class="detail-action"><span>OPEN BOOK INTEL</span><span aria-hidden="true">↗</span></div>
                     </a>
                 </article>
-            @empty
-                <x-empty-state
-                    id="catalog-empty-state"
-                    title="NO TITLES MATCH THIS SEARCH PROTOCOL."
-                    message="Adjust your keywords or reset the active filters."
-                    message-id="catalog-empty-detail"
-                    :action-label="(!empty($filters['q']) || !empty($filters['category']) || request()->filled('rack') || !empty($filters['available'])) ? 'RESET FILTERS' : null"
-                    :action-url="(!empty($filters['q']) || !empty($filters['category']) || request()->filled('rack') || !empty($filters['available'])) ? route('collection.index') : null"
-                />
-            @endforelse
+            @endforeach
+            <x-empty-state
+                id="catalog-empty-state"
+                :hidden="$books->isNotEmpty()"
+                title="NO TITLES MATCH THIS SEARCH PROTOCOL."
+                message="Adjust your keywords or reset the active filters."
+                message-id="catalog-empty-detail"
+                :action-label="(!empty($filters['q']) || !empty($filters['category']) || request()->filled('rack') || !empty($filters['available'])) ? 'RESET FILTERS' : null"
+                :action-url="(!empty($filters['q']) || !empty($filters['category']) || request()->filled('rack') || !empty($filters['available'])) ? route('collection.index') : null"
+            />
         </section>
         @if($books->hasPages())<div class="pagination">{{ $books->links() }}</div>@endif
     </main>
@@ -142,7 +144,7 @@
             const emptyDetail = document.querySelector('#catalog-empty-detail');
             const resultCount = document.querySelector('#catalog-result-count');
 
-            if (!searchInput || !filterForm || cards.length === 0) {
+            if (!searchInput || !filterForm) {
                 return;
             }
 

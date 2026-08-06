@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -38,6 +39,19 @@ class AuthController extends Controller
     public function showRegister(): View
     {
         return view('auth.register');
+    }
+
+    public function showForgotPassword(): View
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function showResetPassword(string $token): View
+    {
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => request()->query('email', ''),
+        ]);
     }
 
     public function register(RegisterRequest $request): RedirectResponse
@@ -68,19 +82,24 @@ class AuthController extends Controller
 
     public function updatePassword(ChangePasswordRequest $request): RedirectResponse
     {
-        $request->user()->update([
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+        $user->forceFill([
             'password' => $request->validated('password'),
-        ]);
+            'remember_token' => Str::random(60),
+        ])->save();
+        $user->tokens()->delete();
+        $user->invalidateOtherSessions($sessionId);
 
         $request->session()->regenerate();
 
-        return back()->with('password_success', 'Password updated successfully.');
+        return redirect()->route('account.index')->with('password_success', 'Password updated successfully.');
     }
 
     public function updateProfile(UpdateProfileRequest $request): RedirectResponse
     {
         $request->user()->update($request->validated());
 
-        return back()->with('profile_success', 'Profile updated successfully.');
+        return redirect()->route('account.index')->with('profile_success', 'Profile updated successfully.');
     }
 }

@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesBookStock;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class BookRequest extends FormRequest
 {
+    use ValidatesBookStock;
+
     public function authorize(): bool
     {
         return true;

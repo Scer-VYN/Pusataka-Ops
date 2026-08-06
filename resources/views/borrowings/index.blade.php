@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STACK // My Borrowings</title>
+    @include('partials.preferences')
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css'])
+        @vite(['resources/css/app.css', 'resources/js/theme.js'])
     @else
         <style>{!! file_get_contents(resource_path('css/app.css')) !!}</style>
+        <script>{!! file_get_contents(resource_path('js/theme.js')) !!}</script>
     @endif
     <style>
         .history-shell{max-width:1100px;margin:0 auto;padding:30px 42px 70px}.history-nav{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-bottom:24px;border-bottom:1px solid var(--line-soft)}.history-nav a{color:var(--muted);font:9px 'DM Mono',monospace}.history-nav a:hover{color:var(--orange-bright)}.history-title{margin:52px 0 28px}.history-title h1{font-size:48px}.history-title p{margin-top:10px;color:var(--muted);font-size:11px}.flash{padding:11px;margin-bottom:18px;color:#d4e6c4;border:1px solid #41533b;background:#162019;font:10px 'DM Mono',monospace}.history-summary{display:flex;gap:28px;margin-bottom:16px;padding:13px 15px;border:1px solid var(--line-soft);background:#0e1417}.history-summary span,.history-label{color:#68787d;font:8px 'DM Mono',monospace;letter-spacing:.1em}.history-summary strong{display:block;margin-top:5px;color:var(--orange-bright);font:600 20px 'Rajdhani',sans-serif}.history-list{display:grid;gap:9px}.history-row{display:grid;grid-template-columns:58px 1fr auto auto;align-items:center;gap:17px;padding:15px;border:1px solid var(--line-soft);background:var(--panel)}.history-cover{width:48px;height:65px}.history-label{display:block;margin-bottom:6px;color:var(--orange)}.history-row h2{color:var(--text);font-size:13px}.history-row p{margin-top:5px;color:var(--muted);font:9px 'DM Mono',monospace}.history-dates{color:#a8b4b2;font:9px 'DM Mono',monospace;line-height:1.8}.history-status{color:var(--green);font:9px 'DM Mono',monospace}.history-status.returned{color:var(--blue)}.history-actions{display:flex;gap:6px}.history-actions button{padding:8px;border:1px solid var(--line);color:#b4bfbc;background:transparent;font:8px 'DM Mono',monospace}.history-actions button:hover{color:var(--orange-bright);border-color:var(--orange)}.pagination{margin-top:25px;text-align:center}.pagination a,.pagination span{display:inline-block;padding:8px 11px;color:var(--muted);font:9px 'DM Mono',monospace}.pagination .active{color:#170d08;background:var(--orange-bright)}.extend-dialog{width:min(420px,calc(100% - 36px));padding:0;border:1px solid #33444a;color:var(--text);background:#11191c;box-shadow:0 20px 60px rgba(0,0,0,.55)}.extend-dialog::backdrop{background:rgba(3,6,7,.75)}.extend-dialog-content{padding:24px}.extend-dialog h2{margin:8px 0 10px;color:#eaf0eb;font:600 25px/.95 Rajdhani,sans-serif}.extend-dialog p{color:var(--muted);font-size:10px;line-height:1.6}.extend-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}.extend-dialog-actions button{padding:10px 13px;border:1px solid var(--line);color:#b4bfbc;background:transparent;font:8px 'DM Mono',monospace}.extend-dialog-actions button[type=submit]{color:#170d08;background:var(--orange-bright);border-color:var(--orange-bright)}@media(max-width:700px){.history-shell{padding:22px 18px}.history-row{grid-template-columns:48px 1fr;gap:12px}.history-dates,.history-status,.history-actions{grid-column:2}.history-title h1{font-size:39px}}
+        .flash.error{color:#ff9470;border-color:#713f32;background:#271612}
     </style>
 </head>
 <body>
@@ -26,6 +29,7 @@
         <nav class="history-nav"><a href="{{ route('dashboard') }}">← COMMAND CENTER</a><a href="{{ route('collection.index') }}">EXPLORE COLLECTION ↗</a>@if (auth()->user()?->role === 'pustakawan')<a href="{{ route('librarian.index') }}">LIBRARY OPERATIONS ↗</a>@endif</nav>
         <header class="history-title"><p class="section-index">02 / BORROWING LOG</p><h1>MY<br><em>BORROWINGS</em></h1><p>Track every active and completed library mission.</p></header>
         @if(session('success'))<div class="flash">{{ session('success') }}</div>@endif
+        @if($errors->any())<div class="flash error" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
         <div class="history-summary"><div><span>MISSIONS LOGGED</span><strong>{{ $borrowings->total() }}</strong></div><div><span>PAGE</span><strong>{{ $borrowings->currentPage() }}/{{ $borrowings->lastPage() }}</strong></div></div>
         <section class="history-list">
             @forelse($borrowings as $borrowing)

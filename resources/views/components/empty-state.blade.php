@@ -4,9 +4,10 @@
     'actionLabel' => null,
     'actionUrl' => null,
     'messageId' => null,
+    'hidden' => false,
 ])
 
-<div {{ $attributes->merge(['class' => 'empty-state', 'role' => 'status']) }}>
+<div @if($hidden) hidden @endif {{ $attributes->merge(['class' => 'empty-state', 'role' => 'status']) }}>
     <span class="empty-state-mark" aria-hidden="true">//</span>
     <strong>{{ $title }}</strong>
     @if ($message)

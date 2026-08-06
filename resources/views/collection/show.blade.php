@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $book->title }} // STACK</title>
+    @include('partials.preferences')
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css'])
+        @vite(['resources/css/app.css', 'resources/js/theme.js'])
     @else
         <style>{!! file_get_contents(resource_path('css/app.css')) !!}</style>
+        <script>{!! file_get_contents(resource_path('js/theme.js')) !!}</script>
     @endif
     <style>
         .message.error{border-color:#713f32;color:#ff9470;background:#271612}

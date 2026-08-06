@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STACK // Register</title>
+    @include('partials.preferences')
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
         :root { color-scheme: dark; }
@@ -29,6 +30,7 @@
         .switch { margin: 24px 0 0; color: #718086; font-size: 11px; text-align: center; }
         a { color: #ff8240; text-decoration: none; }
     </style>
+    <script>{!! file_get_contents(resource_path('js/theme.js')) !!}</script>
 </head>
 <body>
     <main class="auth-shell">
@@ -39,10 +41,10 @@
         <form id="register-form" method="POST" action="{{ route('register.store') }}" novalidate>
             @csrf
             <label for="name">FULL NAME</label>
-            <input id="name" name="name" type="text" value="{{ old('name') }}" autocomplete="name" aria-invalid="{{ $errors->has('name') ? 'true' : 'false' }}" aria-describedby="name-error" required autofocus>
+            <input id="name" name="name" type="text" maxlength="255" value="{{ old('name') }}" autocomplete="name" aria-invalid="{{ $errors->has('name') ? 'true' : 'false' }}" aria-describedby="name-error" required autofocus>
             <div class="error" id="name-error" role="alert" @if(!$errors->has('name')) hidden @endif>@error('name'){{ $message }}@enderror</div>
             <label for="email">EMAIL</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="email" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" aria-describedby="email-error" required>
+            <input id="email" name="email" type="email" maxlength="255" value="{{ old('email') }}" autocomplete="email" aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}" aria-describedby="email-error" required>
             <div class="error" id="email-error" role="alert" @if(!$errors->has('email')) hidden @endif>@error('email'){{ $message }}@enderror</div>
             <label for="password">PASSWORD</label>
             <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}" aria-describedby="password-error" required>

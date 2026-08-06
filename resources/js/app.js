@@ -1,5 +1,12 @@
 const books = window.libraryBooks ?? {};
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+const notificationsDisabled = window.libraryPreferences?.getNotificationsEnabled?.() === false;
+
+if (notificationsDisabled) {
+    document.querySelector('#notification-trigger')?.setAttribute('hidden', '');
+    document.querySelector('#notification-popover')?.setAttribute('hidden', '');
+    document.querySelector('[data-nav="notifications"]')?.setAttribute('hidden', '');
+}
 
 const modal = document.querySelector('#book-modal');
 const modalCover = document.querySelector('#modal-cover');
@@ -7,9 +14,14 @@ const modalCoverTitle = document.querySelector('#modal-cover-title');
 const modalDetailLink = document.querySelector('#modal-detail-link');
 const toast = document.querySelector('#toast');
 let toastTimeout;
+let lastFocusedElement;
 
 function showToast(message) {
-    document.querySelector('#toast-message').textContent = message;
+    const toastMessage = document.querySelector('#toast-message');
+
+    if (!toast || !toastMessage) return;
+
+    toastMessage.textContent = message;
     toast.classList.add('show');
     window.clearTimeout(toastTimeout);
     toastTimeout = window.setTimeout(() => toast.classList.remove('show'), 3200);
@@ -47,6 +59,7 @@ function openBook(bookId) {
     const book = books[bookId];
     if (!book || !modal || !modalCover) return;
 
+    lastFocusedElement = document.activeElement;
     document.querySelector('#modal-category').textContent = book.category;
     document.querySelector('#modal-title').textContent = book.title;
     document.querySelector('#modal-author').textContent = book.author;
@@ -67,10 +80,10 @@ function openBook(bookId) {
             ? 'Request to borrow'
             : 'Currently unavailable';
     }
-        updateBorrowSummary();
-        modal.classList.add('open');
+    updateBorrowSummary();
+    modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
-    document.querySelector('#modal-close').focus();
+    document.querySelector('#modal-close')?.focus();
 }
 
 function updateBorrowSummary() {
@@ -84,7 +97,12 @@ function updateBorrowSummary() {
 
     const dueDate = new Date(`${startDate}T00:00:00`);
     dueDate.setDate(dueDate.getDate() + duration);
-    summaryDates.textContent = `START ${startDate} // DUE ${dueDate.toISOString().slice(0, 10)}`;
+    const dueDateString = [
+        dueDate.getFullYear(),
+        String(dueDate.getMonth() + 1).padStart(2, '0'),
+        String(dueDate.getDate()).padStart(2, '0'),
+    ].join('-');
+    summaryDates.textContent = `START ${startDate} // DUE ${dueDateString}`;
 }
 
 function closeBook() {
@@ -92,6 +110,10 @@ function closeBook() {
 
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden', 'true');
+    if (lastFocusedElement instanceof HTMLElement && document.contains(lastFocusedElement)) {
+        lastFocusedElement.focus();
+    }
+    lastFocusedElement = null;
 }
 
 async function postJson(url, payload = {}) {
@@ -126,14 +148,15 @@ modal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         closeBook();
-        document.querySelector('#notification-popover')?.classList.remove('open');
+        closeNotificationPopover();
         closeProfileMenu();
+        setSidebarOpen(false);
     }
 });
 
 document.querySelector('#modal-borrow')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
-    const bookId = modalCover.dataset.book;
+    const bookId = modalCover?.dataset.book;
 
     if (!validateBorrowForm(
         document.querySelector('#modal-borrow-date'),
@@ -165,7 +188,7 @@ document.querySelector('#modal-borrow')?.addEventListener('click', async (event)
     }
 });
 
-document.querySelector('#extend-button').addEventListener('click', async (event) => {
+document.querySelector('#extend-button')?.addEventListener('click', async (event) => {
     const borrowingId = event.currentTarget.dataset.borrowingId;
 
     if (!borrowingId) {
@@ -209,6 +232,8 @@ const searchInput = document.querySelector('#global-search');
 let selectedFilter = 'all';
 
 function renderBooks() {
+    if (!searchInput || !emptyState) return;
+
     const searchTerm = searchInput.value.trim().toLowerCase();
     let visibleCards = 0;
 
@@ -232,22 +257,13 @@ filterButtons.forEach((button) => {
     });
 });
 
-searchInput.addEventListener('input', renderBooks);
+searchInput?.addEventListener('input', renderBooks);
 document.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        if (!searchInput) return;
+
         event.preventDefault();
         searchInput.focus();
-    }
-});
-
-const notificationPopover = document.querySelector('#notification-popover');
-document.querySelector('#notification-trigger').addEventListener('click', (event) => {
-    event.stopPropagation();
-    notificationPopover.classList.toggle('open');
-});
-document.addEventListener('click', (event) => {
-    if (!notificationPopover.contains(event.target) && event.target.id !== 'notification-trigger') {
-        notificationPopover.classList.remove('open');
     }
 });
 
@@ -260,22 +276,56 @@ const closeProfileMenu = () => {
     profileTrigger.setAttribute('aria-expanded', 'false');
 };
 
+const notificationPopover = document.querySelector('#notification-popover');
+const notificationTrigger = document.querySelector('#notification-trigger');
+const closeNotificationPopover = () => {
+    notificationPopover?.classList.remove('open');
+    notificationTrigger?.setAttribute('aria-expanded', 'false');
+    notificationTrigger?.setAttribute('aria-label', 'Show notifications');
+};
+
 profileTrigger?.addEventListener('click', (event) => {
     event.stopPropagation();
+    closeNotificationPopover();
+    if (!profileMenu) return;
+
     const isOpen = !profileMenu.hidden;
     profileMenu.hidden = isOpen;
     profileTrigger.setAttribute('aria-expanded', String(!isOpen));
 });
 profileMenu?.addEventListener('click', (event) => event.stopPropagation());
+
+notificationTrigger?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (!notificationPopover) return;
+
+    const isOpen = !notificationPopover.classList.contains('open');
+    closeProfileMenu();
+    notificationPopover.classList.toggle('open', isOpen);
+    notificationTrigger.setAttribute('aria-expanded', String(isOpen));
+    notificationTrigger.setAttribute('aria-label', isOpen ? 'Hide notifications' : 'Show notifications');
+});
+document.addEventListener('click', (event) => {
+    if (notificationPopover && !notificationPopover.contains(event.target) && event.target !== notificationTrigger) {
+        closeNotificationPopover();
+    }
+    if (profileMenu && !profileMenu.contains(event.target) && event.target !== profileTrigger) {
+        closeProfileMenu();
+    }
+});
+
 document.querySelectorAll('[data-profile-link]').forEach((link) => {
     link.addEventListener('click', closeProfileMenu);
 });
-document.querySelector('#mark-read').addEventListener('click', async () => {
+document.querySelector('#mark-read')?.addEventListener('click', async () => {
     try {
         await postJson('/notifications/read');
         document.querySelector('.icon-alert')?.remove();
         document.querySelector('.notification-dot')?.remove();
-        notificationPopover.classList.remove('open');
+        const markReadButton = document.querySelector('#mark-read');
+        markReadButton?.setAttribute('aria-disabled', 'true');
+        if (markReadButton) markReadButton.disabled = true;
+        closeNotificationPopover();
         showToast('All notifications marked as read.');
     } catch (error) {
         showToast(error.message);
@@ -284,17 +334,39 @@ document.querySelector('#mark-read').addEventListener('click', async () => {
 
 const sidebar = document.querySelector('#sidebar');
 const sidebarBackdrop = document.querySelector('#sidebar-backdrop');
+const mobileMenu = document.querySelector('#mobile-menu');
 const setSidebarOpen = (open) => {
-    sidebar.classList.toggle('open', open);
-    sidebarBackdrop.classList.toggle('open', open);
+    sidebar?.classList.toggle('open', open);
+    sidebarBackdrop?.classList.toggle('open', open);
+    mobileMenu?.setAttribute('aria-expanded', String(open));
+    mobileMenu?.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
 };
 
-document.querySelector('#mobile-menu').addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('open')));
-sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false));
-document.querySelectorAll('.nav-item').forEach((item) => {
+mobileMenu?.addEventListener('click', () => setSidebarOpen(!sidebar?.classList.contains('open')));
+sidebarBackdrop?.addEventListener('click', () => setSidebarOpen(false));
+const navItems = [...document.querySelectorAll('.nav-item[data-nav]')];
+const setActiveNav = (activeItem) => {
+    navItems.forEach((item) => {
+        const isActive = item === activeItem;
+        item.classList.toggle('active', isActive);
+        if (isActive) {
+            item.setAttribute('aria-current', 'page');
+        } else {
+            item.removeAttribute('aria-current');
+        }
+    });
+};
+const syncHashNavigation = () => {
+    const currentHash = window.location.hash || '#command-center';
+    const activeItem = navItems.find((item) => item.getAttribute('href') === currentHash);
+    if (activeItem) setActiveNav(activeItem);
+};
+
+window.addEventListener('hashchange', syncHashNavigation);
+syncHashNavigation();
+navItems.forEach((item) => {
     item.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach((nav) => nav.classList.remove('active'));
-        item.classList.add('active');
+        setActiveNav(item);
         setSidebarOpen(false);
     });
 });

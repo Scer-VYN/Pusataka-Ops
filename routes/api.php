@@ -7,12 +7,21 @@ use App\Http\Controllers\Api\BorrowingController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PasswordController;
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\PreferencesController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\LibraryActionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+        ->middleware('throttle:password-recovery');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])
+        ->middleware('throttle:password-reset')
+        ->name('password.reset.api');
 });
 
 Route::get('/books', [BookController::class, 'index']);
@@ -24,6 +33,12 @@ Route::get('/racks', [CategoryController::class, 'racks']);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::match(['put', 'patch'], '/profile', [ProfileController::class, 'update']);
+    Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
+    Route::match(['put', 'patch'], '/profile/password', [PasswordController::class, 'update']);
+    Route::get('/preferences', [PreferencesController::class, 'show']);
+    Route::match(['put', 'patch'], '/preferences', [PreferencesController::class, 'update']);
     Route::get('/dashboard', [DashboardController::class, 'show']);
 });
 

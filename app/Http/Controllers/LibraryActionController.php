@@ -153,7 +153,7 @@ class LibraryActionController extends Controller
         return response()->json(['message' => 'Notifications marked as read.']);
     }
 
-    public function extend(Request $request, Borrowing $borrowing): JsonResponse
+    public function extend(Request $request, Borrowing $borrowing): JsonResponse|RedirectResponse
     {
         $user = $request->user();
 
@@ -161,17 +161,26 @@ class LibraryActionController extends Controller
             abort(403);
         }
 
-        if (! $borrowing->is_active || $borrowing->extended) {
-            throw ValidationException::withMessages(['borrowing' => 'This borrowing cannot be extended.']);
+        DB::transaction(function () use ($borrowing): void {
+            $borrowing = Borrowing::query()->lockForUpdate()->findOrFail($borrowing->id);
+
+            if (! $borrowing->is_active || $borrowing->extended) {
+                throw ValidationException::withMessages(['borrowing' => 'This borrowing cannot be extended.']);
+            }
+
+            $borrowing->update([
+                'due_date' => $borrowing->due_date->copy()->addDays(7),
+                'status' => 'extended',
+                'extended' => true,
+            ]);
+        });
+
+        $message = 'Extension request accepted.';
+        if (! $request->expectsJson()) {
+            return back()->with('success', $message);
         }
 
-        $borrowing->update([
-            'due_date' => $borrowing->due_date->addDays(7),
-            'status' => 'extended',
-            'extended' => true,
-        ]);
-
-        return response()->json(['message' => 'Extension request accepted.']);
+        return response()->json(['message' => $message]);
     }
 
     public function returnBook(Request $request, Borrowing $borrowing): JsonResponse|RedirectResponse
@@ -179,16 +188,19 @@ class LibraryActionController extends Controller
         $user = $request->user();
         abort_unless($borrowing->user_id === $user->id, 403);
 
-        if (! $borrowing->is_active) {
-            throw ValidationException::withMessages(['borrowing' => 'This borrowing has already been returned.']);
-        }
-
         DB::transaction(function () use ($borrowing): void {
-            $borrowing->book()->lockForUpdate()->first()->increment('available_stock');
+            $borrowing = Borrowing::query()->lockForUpdate()->findOrFail($borrowing->id);
+
+            if (! $borrowing->is_active) {
+                throw ValidationException::withMessages(['borrowing' => 'This borrowing has already been returned.']);
+            }
+
+            $book = Book::query()->lockForUpdate()->findOrFail($borrowing->book_id);
             $borrowing->update([
                 'return_date' => Carbon::today(),
                 'status' => 'returned',
             ]);
+            $book->increment('available_stock');
         });
 
         $message = 'Book successfully marked as returned.';

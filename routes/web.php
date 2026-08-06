@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BorrowingController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\DashboardController;
@@ -10,15 +11,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login.store');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
 });
 
-Route::middleware('auth')->group(function (): void {
+Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::patch('/account/profile', [AuthController::class, 'updateProfile'])->name('account.profile.update');
+    Route::post('/account/avatar', [AccountController::class, 'uploadAvatar'])->name('account.avatar.update');
     Route::put('/account/password', [AuthController::class, 'updatePassword'])->name('account.password.update');
+    Route::get('/account', AccountController::class)->name('account.index');
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('/collection', [CollectionController::class, 'index'])->name('collection.index');
     Route::get('/books/{book}', [CollectionController::class, 'show'])->name('books.show');

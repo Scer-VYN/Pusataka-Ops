@@ -6,10 +6,12 @@
     <meta name="theme-color" content="#080b0d">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>LIBRARY // Command Center</title>
+    @include('partials.preferences')
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/js/theme.js', 'resources/js/app.js'])
     @else
         <style>{!! file_get_contents(resource_path('css/app.css')) !!}</style>
+        <script>{!! file_get_contents(resource_path('js/theme.js')) !!}</script>
     @endif
 </head>
 @php
@@ -86,11 +88,11 @@
                     Saved titles
                     <span class="nav-count">{{ $savedBooksCount }}</span>
                 </a>
-                <a class="nav-item" href="#settings" data-nav="settings">
+                <a class="nav-item" href="{{ route('account.index') }}" data-nav="account">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24" fill="none"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.6"/><path d="m19.4 15 .1.1a1.8 1.8 0 0 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a1.8 1.8 0 0 1-3.6 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-1.3-3.1h-.2a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 1.3-3.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3.1-1.3V3a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3.1 1.3l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 1.3 3.1h.2a1.8 1.8 0 0 1 0 3.6h-.2a1.8 1.8 0 0 0-1.3 1.3Z" stroke="currentColor" stroke-width="1.3"/></svg>
                     </span>
-                    Settings
+                    04 / ACCOUNT
                 </a>
                 @if ($isLibrarian)
                     <a class="nav-item" href="{{ route('librarian.index') }}" data-nav="librarian">
@@ -113,17 +115,17 @@
 
         <main class="main-content" aria-labelledby="dashboard-title">
             <header class="topbar">
-                <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">
+                <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
                     <span></span><span></span><span></span>
                 </button>
-                <div class="breadcrumb"><span>HOME</span><i>/</i><strong>COMMAND CENTER</strong></div>
+                <x-breadcrumb current="COMMAND CENTER" home-label="HOME" :home-url="route('dashboard')" />
                 <div class="topbar-actions">
                     <div class="global-search">
                         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <input type="search" id="global-search" placeholder="Search titles, authors, publishers..." autocomplete="off">
                         <kbd>⌘ K</kbd>
                     </div>
-                    <button class="icon-button notification-trigger" id="notification-trigger" aria-label="Show notifications">
+                    <button class="icon-button notification-trigger" id="notification-trigger" type="button" aria-label="Show notifications" aria-expanded="false" aria-controls="notification-popover">
                         <svg viewBox="0 0 24 24" fill="none"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         @if ($unreadNotificationsCount > 0)<span class="icon-alert"></span>@endif
                     </button>
@@ -136,8 +138,8 @@
                     <div class="profile-menu" id="profile-menu" hidden>
                         <div class="profile-menu-heading"><span>PROFILE // {{ str_pad($user->id, 5, '0', STR_PAD_LEFT) }}</span><strong>{{ $user->name }}</strong></div>
                         <p>{{ $user->email }}</p>
-                        <a href="#profile" data-profile-link>OPEN PROFILE <span>↗</span></a>
-                        <a href="#settings" data-profile-link>OPEN SETTINGS <span>↗</span></a>
+                        <a href="{{ route('account.index') }}#profile" data-profile-link>OPEN PROFILE <span>↗</span></a>
+                        <a href="{{ route('account.index') }}#settings" data-profile-link>OPEN SETTINGS <span>↗</span></a>
                     </div>
                 </div>
             </header>
@@ -145,7 +147,7 @@
             <div class="content-wrap" id="command-center">
                 <section class="welcome-row">
                     <div>
-                        <p class="eyebrow"><span class="eyebrow-line"></span>{{ strtoupper($today->format('l, d M Y')) }} <span class="eyebrow-muted">//</span> {{ now()->format('H:i:s') }} WIB <span class="role-mode">{{ $isLibrarian ? 'OPERATIONS MODE' : 'MEMBER MODE' }}</span></p>
+                        <p class="eyebrow"><span class="eyebrow-line"></span>{{ strtoupper($today->format('l, d M Y')) }} <span class="eyebrow-muted">//</span> {{ now()->format('H:i:s') }} {{ config('app.timezone') }} <span class="role-mode">{{ $isLibrarian ? 'OPERATIONS MODE' : 'MEMBER MODE' }}</span></p>
                         <h1 id="dashboard-title">{{ $isLibrarian ? 'GOOD SHIFT,' : 'GOOD MORNING,' }}<br><em>{{ strtoupper($firstName) }}.</em></h1>
                         <p class="welcome-copy">{{ $isLibrarian ? 'Your library operations dashboard.' : 'Your personal library operations dashboard.' }}<br>{{ $isLibrarian ? 'Keep the collection mission-ready.' : 'Stay curious. Stay ahead.' }}</p>
                     </div>
@@ -287,50 +289,6 @@
                             <a href="{{ route('borrowings.index') }}" class="text-link activity-link">OPEN ACTIVITY LOG <span>↗</span></a>
                         </section>
                     </aside>
-                </section>
-                <section class="account-panel" id="settings" aria-labelledby="settings-title">
-                    <div class="section-heading">
-                        <div><p class="section-index">04 / ACCOUNT</p><h2 id="settings-title">SETTINGS &amp; PROFILE</h2><p class="section-subtitle">Review the account currently connected to this library session.</p></div>
-                    </div>
-                    <div class="account-grid">
-                        <article class="account-card" id="profile">
-                            <p class="account-label">PROFILE</p>
-                            <h3>{{ $user->name }}</h3>
-                            <dl class="account-details">
-                                <div><dt>EMAIL</dt><dd>{{ $user->email }}</dd></div>
-                                <div><dt>ROLE</dt><dd>{{ strtoupper($user->role) }}</dd></div>
-                                <div><dt>MEMBER ID</dt><dd>{{ str_pad($user->id, 5, '0', STR_PAD_LEFT) }}</dd></div>
-                            </dl>
-                            @if(session('profile_success'))<div class="account-message" role="status">{{ session('profile_success') }}</div>@endif
-                            @if($errors->hasAny(['name', 'email']))<div class="account-message error" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
-                            <form class="account-form" method="POST" action="{{ route('account.profile.update') }}">
-                                @csrf
-                                @method('PATCH')
-                                <label for="profile-name">NAME<input id="profile-name" name="name" value="{{ old('name', $user->name) }}" autocomplete="name" required></label>
-                                <label for="profile-email">EMAIL<input id="profile-email" name="email" type="email" value="{{ old('email', $user->email) }}" autocomplete="email" required></label>
-                                <button class="outline-button" type="submit"><span>UPDATE PROFILE</span><span>↗</span></button>
-                            </form>
-                        </article>
-                        <article class="account-card">
-                            <p class="account-label">SESSION SETTINGS</p>
-                            <h3>SECURE ACCESS</h3>
-                            <p class="account-copy">Change your password without leaving the library session.</p>
-                            @if(session('password_success'))<div class="account-message" role="status">{{ session('password_success') }}</div>@endif
-                            @if($errors->hasAny(['current_password', 'password', 'password_confirmation']))<div class="account-message error" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
-                            <form class="account-form" method="POST" action="{{ route('account.password.update') }}">
-                                @csrf
-                                @method('PUT')
-                                <label for="current-password">CURRENT PASSWORD<input id="current-password" name="current_password" type="password" autocomplete="current-password" required></label>
-                                <label for="new-password">NEW PASSWORD<input id="new-password" name="password" type="password" minlength="8" autocomplete="new-password" required></label>
-                                <label for="password-confirmation">CONFIRM PASSWORD<input id="password-confirmation" name="password_confirmation" type="password" minlength="8" autocomplete="new-password" required></label>
-                                <button class="outline-button" type="submit"><span>UPDATE PASSWORD</span><span>↗</span></button>
-                            </form>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button class="outline-button" type="submit"><span>SIGN OUT</span><span>↪</span></button>
-                            </form>
-                        </article>
-                    </div>
                 </section>
             </div>
         </main>
