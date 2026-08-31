@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         if (! app()->environment('testing')) {
-            return;
+            throw new \LogicException('The default account seeder is only available in the test environment.');
         }
 
         User::query()->updateOrCreate(
