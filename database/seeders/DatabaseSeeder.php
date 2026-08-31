@@ -10,11 +10,12 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed only the accounts required to access the application.
-     */
     public function run(): void
     {
+        if (! app()->environment('testing')) {
+            return;
+        }
+
         User::query()->updateOrCreate(
             ['email' => 'admin@stack01.test'],
             [
