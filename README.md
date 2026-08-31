@@ -79,21 +79,6 @@ For a local SQLite installation, create `database/database.sqlite` and set:
 DB_CONNECTION=sqlite
 ```
 
-## Seeded development accounts
-
-`php artisan migrate --seed` creates the following development accounts:
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Librarian (`pustakawan`) | `admin@stack01.test` | `password` |
-| Member (`anggota`) | `user@stack01.test` | `password` |
-
-These credentials are for local development only. Use new credentials and
-environment-specific account provisioning outside development.
-
-The seeder intentionally creates accounts only; catalog, borrowing, saved-book,
-and notification records are managed through the application and test fixtures.
-
 ## Development
 
 Start the complete development environment with:
