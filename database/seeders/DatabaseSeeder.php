@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         if (! app()->environment('testing')) {
-            throw new \LogicException('DatabaseSeeder may only run in the testing environment. Use environment-specific seeders for other environments.');
+            throw new \LogicException('DatabaseSeeder may only run in the testing environment. Create local accounts through the application or use an environment-specific seeder.');
         }
 
         User::query()->updateOrCreate(
